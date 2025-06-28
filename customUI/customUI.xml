@@ -1,0 +1,11 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+	<ribbon>
+		<tabs>
+			<tab id="maelTab" label="mael" insertAfterMso="TabView">
+				<group id="maelGroup" label="maelForVBA">
+					<button id="BuildButton1" label="Build" size="large" onAction="Build" image="Build" />
+				</group>
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>

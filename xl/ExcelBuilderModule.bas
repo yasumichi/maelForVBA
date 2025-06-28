@@ -231,7 +231,7 @@ CONTINUE:
 End Sub
 
 '''<summary>Control Build Process</summary>
-Sub Build()
+Sub Build(control As IRibbonControl)
     Dim filePath As Variant
     
     filePath = Application.GetOpenFilename("markdown,*.md")
