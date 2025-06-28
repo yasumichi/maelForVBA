@@ -198,23 +198,21 @@ CONTINUE:
         rowNumber = rowNumber + 1
         
         Dim obj As Object
+        Dim content As Collection
         For Each stepDict In steps
             colNumber = 1
-            If stepDict.Count > 0 Then
-                Dim index As Long
-                Dim arr As Variant
-                Dim content As Collection
-                For index = 0 To stepDict.Count - 1
-                    arr = stepDict.Items
-                    Set content = arr(index)
+            For Each key In columns.Keys
+                If stepDict.Exists(key) Then
+                    Set content = stepDict.item(key)
                     Cells(rowNumber, colNumber).Value = JoinCollection(content)
-                    colNumber = colNumber + 1
-                Next
-            End If
+                End If
+                colNumber = colNumber + 1
+            Next
             rowNumber = rowNumber + 1
         Next
         
         ' format borders
+        Dim index As Long
         With Range(Cells(titleRow, 1), Cells(rowNumber - 1, columns.Count))
             For index = xlEdgeLeft To xlInsideHorizontal
                 With .Borders(index)
