@@ -232,5 +232,13 @@ End Sub
 
 '''<summary>Control Build Process</summary>
 Sub Build()
-    Convert ThisWorkbook.Path & "\testcase.md"
+    Dim filePath As Variant
+    
+    filePath = Application.GetOpenFilename("markdown,*.md")
+    
+    If filePath = False Then
+        Exit Sub
+    End If
+    
+    Convert CStr(filePath)
 End Sub
