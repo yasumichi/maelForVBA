@@ -182,6 +182,12 @@ Sub Convert(filePath As String)
 CONTINUE:
         Loop
         
+        .Close
+        
+        If steps.Count = 0 Then
+            Exit Sub
+        End If
+        
         Dim key As Variant
         Dim colNumber As Long
         colNumber = 1
@@ -223,8 +229,6 @@ CONTINUE:
                 End With
             Next
         End With
-            
-        .Close
     End With
 End Sub
 
