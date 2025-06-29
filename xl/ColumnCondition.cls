@@ -12,14 +12,18 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public value_type As ValueType
+Public initial_value As Long
 Public width As Double
 Public alignment As Long
+Public maxCount As Long
 
 ''' <summary>Constructor</sammary>
 Private Sub Class_Initialize()
     value_type = TYPE_STRING
+    initial_value = 1
     width = 8.38
     alignment = xlLeft
+    maxCount = 1
 End Sub
 
 ''' <summary>public initializer</sammary>
