@@ -24,6 +24,9 @@ Private Sub Class_Initialize()
     Set contentItems = New Collection
 End Sub
 
+''' <summary>public initializer</sammary>
+''' <params id="title_">column title</param>
+''' <params id="type_">column value type</param>
 Public Sub Init(title_ As String, type_ As ValueType)
     title = title_
     itemType = type_
