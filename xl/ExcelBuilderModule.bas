@@ -118,8 +118,10 @@ Sub Convert(ByVal filePath As String, ByVal config As ColumnConfig)
                 End If
             End With
             
-            Cells(rowNumber, 1).Value = RTrim(line)
-            rowNumber = rowNumber + 1
+            If Len(Trim(line)) > 0 Then
+                Cells(rowNumber, 1).Value = RTrim(line)
+                rowNumber = rowNumber + 1
+            End If
         Loop
 
         ' read steps
@@ -196,8 +198,6 @@ Sub Convert(ByVal filePath As String, ByVal config As ColumnConfig)
                     End If
                 End If
             End With
-            'Cells(rowNumber, 1).Value = line
-            'rowNumber = rowNumber + 1]
 CONTINUE:
         Loop
         
@@ -275,7 +275,10 @@ CONTINUE:
                         listIndex = 1
                         If content.Count > 0 Then
                             For listIndex = 1 To content.Count
-                                Cells(rowNumber, colNumber + listIndex - 1).Value = content.item(listIndex)
+                                With New RegExp
+                                    .Pattern = "^-\s+"
+                                    Cells(rowNumber, colNumber + listIndex - 1).Value = .Replace(content.item(listIndex), "")
+                                End With
                             Next
                         End If
                     End If
