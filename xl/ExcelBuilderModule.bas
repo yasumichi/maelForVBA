@@ -47,7 +47,7 @@ End Function
 
 '''<summary>Convert Markdown to Sheet</summary>
 '''<params id="filePath"></params>
-Sub Convert(filePath As String)
+Sub Convert(ByVal filePath As String, ByVal config As ColumnConfig)
     Dim adoStream As New ADODB.Stream
     Dim rowNumber As Long
     Dim line As String
@@ -125,10 +125,13 @@ Sub Convert(filePath As String)
         ' read steps
         Dim steps As New Collection
         Dim stepDict As New Scripting.Dictionary
-        Dim columns As New Scripting.Dictionary
+        Dim cond As ColumnCondition
         Dim item As StepItem
+        Dim itemType As ValueType
         Dim title As String
         Set item = Nothing
+        
+        itemType = TYPE_STRING
         Do While True
             line = .ReadText(-2)
             
@@ -147,6 +150,11 @@ Sub Convert(filePath As String)
                 If .Test(line) Then
                     If Not item Is Nothing Then
                         stepDict.Add item.title, item.GetContent()
+                        If itemType = TYPE_LIST Then
+                            If config.conditions.item(title).maxCount < item.GetContent().Count Then
+                                config.conditions.item(title).maxCount = item.GetContent().Count
+                            End If
+                        End If
                         Set item = Nothing
                     End If
                     If stepDict.Count > 0 Then
@@ -161,20 +169,31 @@ Sub Convert(filePath As String)
                 If mc.Count > 0 Then
                     If Not item Is Nothing Then
                         stepDict.Add item.title, item.GetContent()
+                        If itemType = TYPE_LIST Then
+                            If config.conditions.item(title).maxCount < item.GetContent().Count Then
+                                config.conditions.item(title).maxCount = item.GetContent().Count
+                            End If
+                        End If
                     End If
                     
                     title = mc(0).SubMatches(0)
-                    If Not columns.Exists(title) Then
-                        columns.Add title, ""
+                    If config.conditions.Exists(title) Then
+                        itemType = config.conditions.item(title).value_type
+                    Else
+                        itemType = TYPE_STRING
+                        Set cond = New ColumnCondition
+                        config.conditions.Add title, cond
                     End If
                     
                     Set item = New StepItem
-                    item.Init title, TYPE_STRING
+                    item.Init title, itemType
                     GoTo CONTINUE
                 End If
                 
                 If Not item Is Nothing Then
-                    item.AddContentLine (RTrim(line))
+                    If Len(Trim(line)) > 0 Then
+                        item.AddContentLine (RTrim(line))
+                    End If
                 End If
             End With
             'Cells(rowNumber, 1).Value = line
@@ -188,38 +207,93 @@ CONTINUE:
             Exit Sub
         End If
         
+        ' column header
+        Dim allCond As Scripting.Dictionary
         Dim key As Variant
         Dim colNumber As Long
+        Dim maxCol As Long
+        Dim listIndex As Long
         colNumber = 1
-        For Each key In columns.Keys
-            titleRow = rowNumber
-            With Cells(rowNumber, colNumber)
-                .Value = key
-                .Font.Bold = True
-                .HorizontalAlignment = xlCenter
-            End With
-            colNumber = colNumber + 1
+        titleRow = rowNumber
+        
+        Set allCond = config.AllConditions()
+        
+        For Each key In allCond.Keys
+            Set cond = config.AllConditions().item(key)
+            Select Case cond.value_type
+            Case ValueType.TYPE_INCREMENT
+                columns(colNumber).ColumnWidth = cond.width
+                With Cells(rowNumber, colNumber)
+                    .Value = key
+                    .Font.Bold = True
+                    .HorizontalAlignment = xlCenter
+                End With
+                colNumber = colNumber + 1
+            Case ValueType.TYPE_LIST
+                For listIndex = 1 To cond.maxCount
+                    columns(colNumber + listIndex - 1).ColumnWidth = cond.width
+                    With Cells(rowNumber, colNumber + listIndex - 1)
+                        .Value = key & listIndex
+                        .Font.Bold = True
+                        .HorizontalAlignment = xlCenter
+                    End With
+                Next
+                colNumber = colNumber + cond.maxCount
+            Case ValueType.TYPE_STRING
+                columns(colNumber).ColumnWidth = cond.width
+                With Cells(rowNumber, colNumber)
+                    .Value = key
+                    .Font.Bold = True
+                    .HorizontalAlignment = xlCenter
+                End With
+                colNumber = colNumber + 1
+            End Select
+            
         Next
+        
+        maxCol = colNumber - 1
         
         rowNumber = rowNumber + 1
         
+        ' table body
         Dim obj As Object
         Dim content As Collection
         For Each stepDict In steps
             colNumber = 1
-            For Each key In columns.Keys
-                If stepDict.Exists(key) Then
-                    Set content = stepDict.item(key)
-                    Cells(rowNumber, colNumber).Value = JoinCollection(content)
+            For Each key In config.prepend_columns
+                If config.prepend_columns.item(key).value_type = TYPE_INCREMENT Then
+                    Cells(rowNumber, colNumber).Value = config.prepend_columns.item(key).initial_value
+                    config.prepend_columns.item(key).initial_value = config.prepend_columns.item(key).initial_value + 1
                 End If
                 colNumber = colNumber + 1
+            Next
+            For Each key In config.conditions.Keys
+                Select Case config.conditions.item(key).value_type
+                Case TYPE_LIST
+                    If stepDict.Exists(key) Then
+                        Set content = stepDict.item(key)
+                        listIndex = 1
+                        If content.Count > 0 Then
+                            For listIndex = 1 To content.Count
+                                Cells(rowNumber, colNumber + listIndex - 1).Value = content.item(listIndex)
+                            Next
+                        End If
+                    End If
+                    colNumber = colNumber + config.conditions.item(key).maxCount
+                Case TYPE_STRING
+                    If stepDict.Exists(key) Then
+                        Set content = stepDict.item(key)
+                        Cells(rowNumber, colNumber).Value = JoinCollection(content)
+                    End If
+                    colNumber = colNumber + 1
+                End Select
             Next
             rowNumber = rowNumber + 1
         Next
         
         ' format borders
         Dim index As Long
-        With Range(Cells(titleRow, 1), Cells(rowNumber - 1, columns.Count))
+        With Range(Cells(titleRow, 1), Cells(rowNumber - 1, maxCol))
             For index = xlEdgeLeft To xlInsideHorizontal
                 With .Borders(index)
                     .LineStyle = xlContinuous
@@ -235,6 +309,8 @@ End Sub
 '''<summary>Control Build Process</summary>
 Sub Build(control As IRibbonControl)
     Dim filePath As Variant
+    Dim configPath As String
+    Dim config As New ColumnConfig
     
     filePath = Application.GetOpenFilename("markdown,*.md")
     
@@ -242,5 +318,11 @@ Sub Build(control As IRibbonControl)
         Exit Sub
     End If
     
-    Convert CStr(filePath)
+    configPath = Replace(filePath, Dir(filePath), "config\columns.xlsx")
+    
+    If Dir(configPath) <> "" Then
+        config.Parse (configPath)
+    End If
+        
+    Convert CStr(filePath), config
 End Sub
