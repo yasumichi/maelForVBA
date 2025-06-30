@@ -220,9 +220,12 @@ CONTINUE:
         
         For Each key In allCond.Keys
             Set cond = config.AllConditions().item(key)
+            With columns(colNumber)
+                .ColumnWidth = cond.width
+                .HorizontalAlignment = cond.alignment
+            End With
             Select Case cond.value_type
             Case ValueType.TYPE_INCREMENT
-                columns(colNumber).ColumnWidth = cond.width
                 With Cells(rowNumber, colNumber)
                     .Value = key
                     .Font.Bold = True
@@ -231,7 +234,10 @@ CONTINUE:
                 colNumber = colNumber + 1
             Case ValueType.TYPE_LIST
                 For listIndex = 1 To cond.maxCount
-                    columns(colNumber + listIndex - 1).ColumnWidth = cond.width
+                    With columns(colNumber + listIndex)
+                        .ColumnWidth = cond.width
+                        .HorizontalAlignment = cond.alignment
+                    End With
                     With Cells(rowNumber, colNumber + listIndex - 1)
                         .Value = key & listIndex
                         .Font.Bold = True
@@ -240,7 +246,6 @@ CONTINUE:
                 Next
                 colNumber = colNumber + cond.maxCount
             Case ValueType.TYPE_STRING
-                columns(colNumber).ColumnWidth = cond.width
                 With Cells(rowNumber, colNumber)
                     .Value = key
                     .Font.Bold = True
