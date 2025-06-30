@@ -22,7 +22,7 @@ Private Sub Class_Initialize()
     value_type = TYPE_STRING
     initial_value = 1
     width = 8.38
-    alignment = xlLeft
+    alignment = xlGeneral
     maxCount = 1
 End Sub
 
