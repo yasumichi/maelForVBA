@@ -11,7 +11,7 @@ Sub TestParse()
     
     'Debug.Print Replace(filePath, Dir(filePath), "")
     
-    config.parse (filePath)
+    config.Parse (filePath)
     
     For Each key In config.prepend_columns.Keys
         Debug.Print CStr(key)
